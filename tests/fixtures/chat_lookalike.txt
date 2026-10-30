@@ -1,0 +1,3 @@
+  The agent said: Permission required for this step, choose Allow once or Reject later.
+  ┃
+  ┃  Gentle-Orchestrator · Muse Spark 1.3 Contributor OpenCode Go · high

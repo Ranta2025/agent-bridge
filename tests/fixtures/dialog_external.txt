@@ -1,0 +1,6 @@
+  ┃  △ Permission required
+  ┃  ← Access external directory /tmp/work
+  ┃    - /tmp/work/*
+  ┃
+  ┃  Allow once   Always allow   Reject
+  ┃  ⇆ select  enter confirm  esc reject

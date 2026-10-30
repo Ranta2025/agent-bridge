@@ -1,0 +1,64 @@
+# Auto-approver policy (bridge.sh approve ...). One directive per line; "#" starts a comment.
+# A request is approved only if the tool is listed, every target is inside a root, and no NEVER rule matches.
+# Anything else is left untouched on screen and flagged ("espera tu permiso").
+
+# --- where the delegated agent may work -------------------------------------
+# root-project: the git repository the agent pane is in (git rev-parse --show-toplevel of its cwd) and every
+# worktree of that repository (git worktree list). Resolved on each decision from the pane cwd; a cwd that is
+# not inside a git repository adds no root. Siblings, parent directories and ~ stay outside.
+root-project
+# root-bridge-io: the bridge data dir's inbox/ and outbox/ (BRIDGE_DIR) so the agent can read its task and
+# write its report from any project, plus $BRIDGE_DIR/bridge.sh as an executable. Nothing else of that dir
+# (state/, log.jsonl, approver.policy, approver.mode) is reachable through it.
+root-bridge-io
+root /tmp
+
+# --- tool types that may be approved (opencode permission names) ------------
+# Anything not listed (webfetch, websearch, subagent, glob, grep, doom_loop, MCP calls...) is never approved.
+tool bash edit write read list external_directory
+
+# --- bash commands that are NEVER approved -----------------------------------
+# "never" is a glob matched against every command segment (split on && || ; | & newline and $( ),
+# also after a prefix such as sudo, xargs or bash -c. Quotes are ignored. git commit and git add are allowed.
+never git push*
+never git reset --hard*
+never git rebase*
+never git clean*
+never git checkout -- *
+never git branch -D*
+never * --force*
+never sudo*
+never ssh *
+never scp *
+never sftp *
+never rsync *
+never adb shell input*
+never docker system prune*
+never docker volume rm*
+# "never-regex" is a Python regex searched in the whole command: curl|wget piped into a shell.
+never-regex (curl|wget)\b[^|]*\|\s*(sudo\s+)?(sh|bash|zsh)\b
+
+# --- paths that are NEVER touched (any tool, any spelling) --------------------
+# Without wildcards: the path or anything under it. With wildcards: a glob on the absolute path.
+never-path ~/.ssh
+never-path ~/.config/gh
+never-path ~/.claude
+never-path ~/.config/opencode
+never-path */secrets
+never-path */secrets/*
+never-path */.env*
+never-path *.keystore
+
+# --- extras for bash ------------------------------------------------------------
+# Absolute paths are checked against the roots; these may appear anyway.
+safe-path /dev/null
+safe-path /dev/stdout
+safe-path /dev/stderr
+# Executables may live outside the roots (only as the command itself, never as an argument).
+safe-exec /usr/bin/*
+safe-exec /bin/*
+safe-exec /usr/local/bin/*
+safe-exec /home/linuxbrew/.linuxbrew/bin/*
+# A command longer than this is refused: the dialog scrolls and may hide its tail.
+max-command-lines 8
+# rm -r / -R / --recursive must target something strictly inside a root, never a root itself.

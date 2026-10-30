@@ -1,0 +1,9 @@
+  ┃  △ Permission required
+  ┃  → Edit src/app/inventory.ts
+  ┃    @@ -1,3 +1,4 @@
+  ┃    -const a = 1
+  ┃    +const a = 2
+  ┃
+  ┃  Allow once   Always allow   Reject
+  ┃  ⇆ select  enter confirm  esc reject
+   ⬝⬝■■■■■■ esc interrupt                  ctrl+p commands    ~/work/app:main

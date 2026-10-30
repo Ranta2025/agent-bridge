@@ -1,0 +1,12 @@
+
+     ⏳ Delegating U2 DiagnosisStep to general...
+
+  ┃
+  ┃  △ Permission required
+  ┃
+  ┃  $ cd /home/dev/work/app-worktrees/release && git commit -q -m x && git push orig
+  ┃  in main
+  ┃
+  ┃
+  ┃  Allow once   Always allow   Reject                   ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                         ~/work/app:main

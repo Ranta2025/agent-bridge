@@ -1,0 +1,12 @@
+
+     ⏳ Delegating U2 DiagnosisStep to general...
+
+  ┃
+  ┃  △ Permission required
+  ┃
+  ┃  $ git -C /home/dev/work/app-worktrees/release commit -q -m "feat(app): show the 
+  ┃  inventory options in the shuffled order"
+  ┃
+  ┃
+  ┃  Allow once   Always allow   Reject                   ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                         ~/work/app:main

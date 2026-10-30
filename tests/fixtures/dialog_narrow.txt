@@ -1,0 +1,8 @@
+  ┃  △ Permission
+  ┃  # Shell command
+  ┃    $ ls -la
+  ┃
+  ┃  Allow once
+  ┃  Always allow
+  ┃  Reject
+  ┃  pgup/pgdn scroll

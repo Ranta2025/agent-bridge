@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# Fake herdr for the bridge tests. Simulates `herdr agent get|list|read|prompt|send-keys|wait|rename` and
+# `herdr workspace create|close|list` + `herdr pane run`: `workspace create` makes workspace wN with root pane wN:p1
+# (state in $FAKE_HERDR_DIR/workspaces/wN/{pane,cwd,label}; every call is logged in $FAKE_HERDR_DIR/ws.log);
+# `pane run gentle-shell|opencode` starts an idle pi|opencode agent there (named wN_p1) unless FAKE_HERDR_NO_START=1;
+# `workspace close` removes the workspace and its agents.
+# State lives in $FAKE_HERDR_DIR/agents/<key>/{pane,agent,name,status,cwd,prompts,keys,screen,drop}.
+# `on_enter` (optional) changes the screen when Enter arrives. `drop` holds how many upcoming prompts are swallowed (the agent never starts working).
+set -euo pipefail
+D="${FAKE_HERDR_DIR:?FAKE_HERDR_DIR not set}"
+A="$D/agents"
+mkdir -p "$A"
+
+W="$D/workspaces"
+
+case "${1:-}" in
+  workspace)
+    mkdir -p "$W"
+    echo "$*" >>"$D/ws.log"
+    case "${2:-}" in
+      create)
+        shift 2
+        cwd="" label=""
+        while (($#)); do
+          case "$1" in --cwd) cwd="$2"; shift ;; --label) label="$2"; shift ;; esac
+          shift
+        done
+        n=$(($(cat "$D/ws.count" 2>/dev/null || echo 0) + 1))
+        echo "$n" >"$D/ws.count"
+        mkdir -p "$W/w$n"
+        echo "w$n:p1" >"$W/w$n/pane"; echo "$cwd" >"$W/w$n/cwd"; echo "$label" >"$W/w$n/label"
+        printf '{"id":"cli:workspace:create","result":{"root_pane":{"pane_id":"w%s:p1","workspace_id":"w%s"},"workspace":{"workspace_id":"w%s","label":"%s"},"type":"workspace_created"}}\n' "$n" "$n" "$n" "$label"
+        ;;
+      close)
+        [[ -z "${FAKE_HERDR_CLOSE_FAILS:-}" ]] || { echo '{"error":{"code":"close_failed"}}' >&2; exit 1; }   # lets a test keep a finished agent alive
+        [[ -d "$W/$3" ]] || { echo '{"error":{"code":"workspace_not_found"}}' >&2; exit 1; }
+        for d in "$A"/*/; do
+          [[ -d "$d" && "$(cat "$d/workspace" 2>/dev/null)" == "$3" ]] && rm -rf "$d"
+        done
+        rm -rf "$W/$3"
+        echo "$3" >>"$D/closed"
+        echo '{"id":"cli:workspace:close","result":{"type":"ok"}}'
+        ;;
+      list)
+        printf '{"id":"cli:workspace:list","result":{"workspaces":['
+        first=1
+        for d in "$W"/*/; do
+          [[ -d "$d" ]] || continue
+          ((first)) || printf ','
+          first=0
+          printf '{"workspace_id":"%s","label":"%s"}' "$(basename "$d")" "$(tr -d '\n' <"$d/label")"
+        done
+        printf '],"type":"workspace_list"}}\n'
+        ;;
+      *) echo "fake_herdr: unsupported workspace subcommand" >&2; exit 2 ;;
+    esac
+    exit 0
+    ;;
+  pane)
+    [[ "${2:-}" == run ]] || { echo "fake_herdr: only 'pane run' is simulated" >&2; exit 2; }
+    pane="$3"; cmd="$4"; ws="${pane%%:*}"
+    echo "pane run $pane $cmd" >>"$D/ws.log"
+    [[ -d "$W/$ws" ]] || { echo '{"error":{"code":"pane_not_found"}}' >&2; exit 1; }
+    kind=""
+    case "$cmd" in gentle-shell) kind=pi ;; opencode) kind=opencode ;; esac
+    if [[ -n "$kind" && "${FAKE_HERDR_NO_START:-}" != 1 ]]; then
+      d="$A/${pane//:/_}"
+      mkdir -p "$d"
+      echo "${pane//:/_}" >"$d/name"; echo "$pane" >"$d/pane"; echo "$kind" >"$d/agent"
+      cat "$W/$ws/cwd" >"$d/cwd"; echo idle >"$d/status"; echo "$ws" >"$d/workspace"
+    fi
+    echo '{"id":"cli:pane:run","result":{"type":"ok"}}'
+    exit 0
+    ;;
+esac
+
+[[ "${1:-}" == agent ]] || { echo "fake_herdr: unsupported command '${1:-}'" >&2; exit 2; }
+shift
+sub="${1:-}"
+shift || true
+
+rd() { [[ -f "$1" ]] && tr -d '\n' <"$1" || true; }
+
+# Find the directory of an agent by name or pane id.
+find_agent() {
+  local d
+  for d in "$A"/*/; do
+    [[ -d "$d" ]] || continue
+    if [[ "$(rd "$d/name")" == "$1" || "$(rd "$d/pane")" == "$1" ]]; then
+      echo "${d%/}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+agent_json() {
+  local d="$1" name
+  name="$(rd "$d/name")"
+  printf '{"agent":"%s","agent_status":"%s","cwd":"%s"' "$(rd "$d/agent")" "$(rd "$d/status")" "$(rd "$d/cwd")"
+  [[ -n "$name" ]] && printf ',"name":"%s"' "$name"
+  printf ',"pane_id":"%s"}' "$(rd "$d/pane")"
+}
+
+need() { find_agent "$1" || { echo "{\"error\":{\"code\":\"agent_not_found\",\"message\":\"agent $1 not found\"}}" >&2; exit 1; }; }
+
+case "$sub" in
+  get)
+    d="$(need "$1")"
+    printf '{"id":"cli:agent:get","result":{"agent":%s,"type":"agent_info"}}\n' "$(agent_json "$d")"
+    ;;
+  list)
+    printf '{"id":"cli:agent:list","result":{"agents":['
+    first=1
+    for d in "$A"/*/; do
+      [[ -d "$d" ]] || continue
+      ((first)) || printf ','
+      first=0
+      agent_json "${d%/}"
+    done
+    printf '],"type":"agent_list"}}\n'
+    ;;
+  read)
+    d="$(need "$1")"
+    [[ -f "$d/screen" ]] && cat "$d/screen" || true
+    ;;
+  prompt)
+    d="$(need "$1")"
+    printf '%s\n' "$2" >>"$d/prompts"
+    n="$(rd "$d/drop")"
+    if [[ -n "$n" && "$n" -gt 0 ]]; then
+      echo $((n - 1)) >"$d/drop"
+    else
+      echo working >"$d/status"
+    fi
+    echo '{"id":"cli:agent:prompt","result":{"type":"ok"}}'
+    ;;
+  send-keys)
+    d="$(need "$1")"
+    shift
+    for k in "$@"; do
+      echo "$k" >>"$d/keys"
+      case "$k" in esc | escape) echo idle >"$d/status" ;; esac
+      # `on_enter` simulates the dialog reacting to Enter: "clear" empties the screen, anything else replaces it.
+      if [[ "$k" == enter && -f "$d/on_enter" ]]; then
+        if [[ "$(rd "$d/on_enter")" == clear ]]; then : >"$d/screen"; else cp "$d/on_enter" "$d/screen"; fi
+      fi
+    done
+    echo '{"id":"cli:agent:send-keys","result":{"type":"ok"}}'
+    ;;
+  wait)
+    # Non-blocking: succeeds if the agent is already in one of the --until states (default idle/done/blocked).
+    d="$(need "$1")"
+    shift
+    want=()
+    while (($#)); do
+      [[ "$1" == --until ]] && want+=("$2")
+      shift
+    done
+    ((${#want[@]})) || want=(idle done blocked)
+    cur="$(rd "$d/status")"
+    for w in "${want[@]}"; do
+      [[ "$w" == "$cur" ]] && { printf '{"id":"cli:agent:wait","result":{"agent":%s}}\n' "$(agent_json "$d")"; exit 0; }
+    done
+    exit 1
+    ;;
+  rename)
+    d="$(need "$1")"
+    echo "$2" >"$d/name"
+    echo '{"id":"cli:agent:rename","result":{"type":"ok"}}'
+    ;;
+  *)
+    echo "fake_herdr: unsupported agent subcommand '$sub'" >&2
+    exit 2
+    ;;
+esac

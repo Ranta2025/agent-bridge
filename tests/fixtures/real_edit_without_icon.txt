@@ -1,0 +1,11 @@
+
+     ⏳ Delegating U2 DiagnosisStep to general...
+
+  ┃
+  ┃  △ Permission required
+  ┃
+  ┃  Edit app/src/presentation/steps/inventory_step.gd
+  ┃
+  ┃
+  ┃  Allow once   Always allow   Reject                   ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                         ~/work/app:main

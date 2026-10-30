@@ -1,0 +1,12 @@
+outbox/
+inbox/
+state/
+log.jsonl
+archive/
+.vclock
+.*.lock
+approver.mode
+__pycache__/
+*.pyc
+watch.log
+watch.pid

@@ -1,0 +1,10 @@
+     ✓ Explore Subagent — Explore DiagnosisStep F12-T03
+
+  ┃  △ Permission required
+  ┃  # Shell command
+  ┃    $ git status --short
+  ┃
+  ┃  Allow once   Always allow   Reject
+  ┃  ⇆ select  enter confirm  esc reject
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+   ⬝⬝■■■■■■ esc interrupt                  ctrl+p commands    ~/work/app:main

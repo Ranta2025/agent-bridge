@@ -1,0 +1,17 @@
+
+     ⏳ Delegating U2 DiagnosisStep to general...
+
+  ┃
+  ┃  △ Permission required
+  ┃
+  ┃  $ cd /home/dev/work/app-worktrees/release && git add app/src/presentation/steps/
+  ┃  inventory_step.gd app/tests/integration/test_inventory_step.gd && git commit -q -F - <<'MSG' &&
+  ┃  git log --oneline -3
+  ┃  feat(app): note that git push is done by Claude
+  ┃
+  ┃  The message mentions git push and sudo rm -rf / only as words.
+  ┃  MSG
+  ┃
+  ┃
+  ┃  Allow once   Always allow   Reject                   ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                         ~/work/app:main

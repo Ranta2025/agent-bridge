@@ -1,0 +1,12 @@
+
+     ⏳ Delegating U2 DiagnosisStep to general...
+
+  ┃
+  ┃  △ Permission required
+  ┃
+  ┃  Frobnicate the widget
+  ┃  Level: 11
+  ┃
+  ┃
+  ┃  Allow once   Always allow   Reject                   ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                         ~/work/app:main

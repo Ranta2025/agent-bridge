@@ -1,0 +1,6 @@
+  ┃  △ Always allow
+  ┃  # Shell command
+  ┃    This will always allow bash for this project.
+  ┃
+  ┃  Confirm   Cancel
+  ┃  ⇆ select  enter confirm  esc cancel

@@ -1,0 +1,4 @@
+  ┃  △ Reject permission
+  ┃  Tell OpenCode what to do differently
+  ┃  ┃ 
+  ┃  enter confirm  esc cancel
