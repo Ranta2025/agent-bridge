@@ -559,6 +559,24 @@ def cmd_render(template, i, title, repo):
 FAIL_RE = re.compile(r"bloquead|blocked|\bfall(?:o|\u00f3|a|ido|ida)\b|\bfail|parcial|partial|incomplet", re.I)
 STATUS_RE = re.compile(r"^[\s>*_#-]*(?:estado|status)[\s*_]*:[\s*_]*(.+?)[\s*_]*$", re.I | re.M)
 TESTS_RE = re.compile(r"^[\s>*_#-]*(?:pruebas|tests?)[\s*_]*:[\s*_]*(.+?)[\s*_]*$", re.I | re.M)
+LEAD_RE = re.compile(r"[^\W\d_]+")
+OK_WORDS = {
+    "done", "ok", "okay", "complete", "completed", "success", "successful", "succeeded", "finished", "passed",
+    "listo", "lista", "hecho", "hecha", "completado", "completada", "terminado", "terminada", "exitoso", "exitosa",
+}
+
+
+def status_failed(status):
+    """The leading word decides; an unrecognised one falls back to a failure-word search of the whole line."""
+    if not status:
+        return False
+    lead = LEAD_RE.search(status)
+    word = lead.group(0).lower() if lead else ""
+    if word and FAIL_RE.search(word):
+        return True
+    if word in OK_WORDS:
+        return False
+    return bool(FAIL_RE.search(status))
 
 
 def parse_report(text):
@@ -566,7 +584,7 @@ def parse_report(text):
     m = STATUS_RE.search(text)
     status = m.group(1).strip() if m else ""
     t = TESTS_RE.search(text)
-    return status, bool(status and FAIL_RE.search(status)), (t.group(1).strip() if t else "")
+    return status, status_failed(status), (t.group(1).strip() if t else "")
 
 
 def commits_since(repo, base):
