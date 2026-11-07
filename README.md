@@ -79,7 +79,7 @@ States: `queued`, `sent`, `working`, `done`, `failed`, `stalled`, `undelivered`,
 | `sent` | `undelivered` | `DELIVER_S` passed and the agent is `missing` or 3 prompts were already sent. |
 | `working` | `stalled` | The agent is neither `working` nor `missing`/`unknown`, and it has been that way for `STALL_S` (180 s) counted from the first tick that saw it idle. Only `working` tasks stall; `sent` never does. |
 | `stalled` | `working` | `tick` sees the agent `working` again (`resumed`). |
-| `sent`, `working`, `stalled` | `done` / `failed` | `tick` finds a non-empty `outbox/<id>.md`. The report always wins over every other signal. The first `Status:` (or `Estado:`) line decides: if it contains blocked, partial, fail, incomplete (or the Spanish bloqueado, parcial, fallo, incompleto) the task is `failed`, otherwise `done`. A report with no status line is `done`. |
+| `sent`, `working`, `stalled` | `done` / `failed` | `tick` finds a non-empty `outbox/<id>.md`. The report always wins over every other signal. The first `Status:` (or `Estado:`) line decides, by its leading word: a success word (done, ok, complete, completed, finished, success, passed, or the Spanish listo, hecho, completado, terminado, exitoso) makes the task `done` even if the rest of the line mentions failures (`Status: done, 0 failures`); a failure word (blocked, partial, fail, incomplete, or the Spanish bloqueado, parcial, fallo, incompleto) makes it `failed`. Any other leading word falls back to searching the whole line for a failure word. A report with no status line is `done`. |
 | `sent`, `working`, `stalled`, `queued` | `cancelled` | `cancel` (sends Esc to the agent first unless the task is only queued). |
 | `undelivered`, `stalled`, `failed`, `cancelled` | `sent` | `resend` (`attempts` + 1, same history). `send` on an existing finished task does the same. |
 
@@ -238,6 +238,6 @@ The suite never touches real agents: it sets `BRIDGE_DIR` and `BRIDGE_HERDR` to 
 - **`undelivered`:** the agent did not start after 3 prompts (30 s each). Look at its pane (`peek`, `show`): it may sit in a dialog or have unsent text. Clear it and `./bridge.sh resend <id>`.
 - **`stalled`:** idle more than 180 s with no report. If it is still working the next tick returns it to `working`; otherwise `resend` or `cancel`.
 - **`send` exits 3 / 4 / 5 / 7:** busy or cap reached (use `--queue` or wait) / commit or discard tracked changes, or `--force` / fix what `lint` says / change the surfaces or use another worktree.
-- **`failed` although the work succeeded:** the report's `Status:` line contains a failure word such as "partial". Fix the report or resend.
+- **`failed` although the work succeeded:** the report's `Status:` line starts with a failure word such as "partial", or with an unrecognised word followed by one. Start the line with a success word (`Status: done, ...`) or resend.
 - **Still `working` after the agent finished:** `outbox/<id>.md` is missing or empty.
 - **Tidy up:** `./bridge.sh clean --days 7 --dry-run` lists what would be archived.

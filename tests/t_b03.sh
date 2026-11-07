@@ -101,6 +101,34 @@ test_tick_marks_done_for_positive_status_lines() {
   done
 }
 
+test_tick_marks_done_when_success_status_mentions_a_failure_word() {
+  local i=0 line
+  for line in "Status: done, 0 failures" "Status: done, nothing partial" "**Estado:** completado, sin bloqueos" "Status: OK - no failed tests"; do
+    i=$((i + 1))
+    id="H-$i"
+    mk_task "$id"
+    fh_status gentle idle
+    br send gentle "$id" "$REPO"
+    printf '# Report\n\n%s\n' "$line" >"$BRIDGE_DIR/outbox/$id.md"
+    br tick
+    eq done "$(sget "$id" state)" "line [$line]"
+  done
+}
+
+test_tick_marks_failed_when_failure_word_leads_or_status_is_unrecognised() {
+  local i=0 line
+  for line in "Status: partial, done 3 of 4" "Status: failed - done nothing" "Status: work incomplete"; do
+    i=$((i + 1))
+    id="J-$i"
+    mk_task "$id"
+    fh_status gentle idle
+    br send gentle "$id" "$REPO"
+    printf '# Report\n\n%s\n' "$line" >"$BRIDGE_DIR/outbox/$id.md"
+    br tick
+    eq failed "$(sget "$id" state)" "line [$line]"
+  done
+}
+
 test_report_without_status_line_counts_as_done() {
   send_pending A-6
   printf 'just text\n' >"$BRIDGE_DIR/outbox/A-6.md"
